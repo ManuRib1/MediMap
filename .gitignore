@@ -1,0 +1,19 @@
+# Données
+data/raw/*
+data/processed/*
+*.csv
+*.xlsx
+
+# Environnement Python
+venv/
+__pycache__/
+*.pyc
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
