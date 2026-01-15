@@ -1,87 +1,91 @@
 """
-Page Carte de France interactive
+Page Carte de France interactive avec Folium
 """
 
 import streamlit as st
 import pandas as pd
+import folium
+from streamlit_folium import st_folium
 from utils.api_client import get_regions_stats
-from utils.charts import create_map_france
+from utils.charts import format_number, format_currency
 
 st.set_page_config(page_title="Carte - MediMap", page_icon="🗺️", layout="wide")
 
 st.title("🗺️ Carte de France - Consommation par Région")
 st.markdown("---")
 
-# Sélecteur d'année
 annee = st.selectbox("Année", [2023], index=0)
 
-# Récupérer les données
 regions_stats = get_regions_stats(annee)
 
 if regions_stats:
     df = pd.DataFrame(regions_stats)
-    
-    # Mapping codes régions vers codes ISO
-    code_iso_regions = {
-        11: "FR-IDF", 24: "FR-CVL", 27: "FR-BFC", 28: "FR-NOR",
-        32: "FR-HDF", 44: "FR-GES", 52: "FR-PDL", 53: "FR-BRE",
-        75: "FR-NAQ", 76: "FR-OCC", 84: "FR-ARA", 93: "FR-PAC", 94: "FR-COR"
-    }
-    
-    df['code_iso'] = df['code_region'].map(code_iso_regions)
     df['total_remb_float'] = df['total_remb'].astype(float)
     
-    # Choix de la métrique
-    metrique = st.radio(
-        "Métrique à afficher",
-        ["Montant remboursé (€)", "Nombre de boîtes"],
-        horizontal=True
-    )
+    coords_regions = {
+        "Ile-de-France": [48.8566, 2.3522],
+        "Auvergne-Rhone-Alpes": [45.7640, 4.8357],
+        "Nouvelle-Aquitaine": [44.8378, -0.5792],
+        "Occitanie": [43.6047, 1.4442],
+        "Hauts-de-France": [50.6292, 3.0573],
+        "Provence-Alpes-Cote d'Azur": [43.2965, 5.3698],
+        "Grand Est": [48.5734, 7.7521],
+        "Pays de la Loire": [47.2184, -1.5536],
+        "Normandie": [49.4432, 1.0993],
+        "Bretagne": [48.1173, -1.6778],
+        "Bourgogne-Franche-Comte": [47.2805, 5.0417],
+        "Centre-Val de Loire": [47.9029, 1.9093]
+    }
     
-    if metrique == "Montant remboursé (€)":
-        color_col = 'total_remb_float'
-        hover_data = ['total_boites', 'total_remb_float']
-    else:
-        color_col = 'total_boites'
-        hover_data = ['total_boites', 'total_remb_float']
+    m = folium.Map(location=[46.603354, 1.888334], zoom_start=6, tiles='OpenStreetMap')
     
-    # Créer la carte
-    fig = create_map_france(
-        df,
-        locations='code_iso',
-        color=color_col,
-        hover_name='nom_region',
-        title=f'Consommation de médicaments par région ({annee})'
-    )
+    max_remb = df['total_remb_float'].max()
+    min_remb = df['total_remb_float'].min()
     
-    st.plotly_chart(fig, use_container_width=True)
+    for idx, row in df.iterrows():
+        if row['nom_region'] in coords_regions:
+            coords = coords_regions[row['nom_region']]
+            intensity = (row['total_remb_float'] - min_remb) / (max_remb - min_remb)
+            red = int(255)
+            green_blue = int(255 * (1 - intensity))
+            color = f'#{red:02x}{green_blue:02x}{green_blue:02x}'
+            radius = 10 + (intensity * 30)
+            
+            popup_html = f"""
+            <div style="font-family: Arial; min-width: 200px;">
+                <h4>{row['nom_region']}</h4>
+                <p><b>Boîtes:</b> {format_number(row['total_boites'])}</p>
+                <p><b>Remboursé:</b> {format_currency(row['total_remb_float'])}</p>
+            </div>
+            """
+            
+            folium.CircleMarker(
+                location=coords, radius=radius, 
+                popup=folium.Popup(popup_html, max_width=300),
+                color=color, fill=True, fillColor=color, 
+                fillOpacity=0.7, weight=2
+            ).add_to(m)
     
-    # Statistiques
-    st.markdown("### 📊 Statistiques")
-    col1, col2, col3 = st.columns(3)
+    st_folium(m, width=None, height=600)
     
-    with col1:
-        max_region = df.loc[df['total_remb_float'].idxmax()]
-        st.metric(
-            "🥇 Région la plus élevée",
-            max_region['nom_region'],
-            f"{max_region['total_remb_float']:,.2f} €".replace(',', ' ')
-        )
+    st.markdown("---")
+    st.markdown("### 🎨 Légende")
+    st.markdown("""
+    - **Taille des cercles** : Proportionnelle au montant
+    - **Rouge foncé** : Montant élevé
+    - **Cliquez** sur un cercle pour voir les détails
+    """)
     
-    with col2:
-        min_region = df.loc[df['total_remb_float'].idxmin()]
-        st.metric(
-            "🥉 Région la plus basse",
-            min_region['nom_region'],
-            f"{min_region['total_remb_float']:,.2f} €".replace(',', ' ')
-        )
+    st.markdown("---")
+    st.markdown("### 📊 Classement")
     
-    with col3:
-        moyenne = df['total_remb_float'].mean()
-        st.metric(
-            "📈 Moyenne nationale",
-            f"{moyenne:,.2f} €".replace(',', ' ')
-        )
+    df_display = df.sort_values('total_remb_float', ascending=False).copy()
+    df_display['total_boites'] = df_display['total_boites'].apply(format_number)
+    df_display['total_remb_float'] = df_display['total_remb_float'].apply(format_currency)
+    df_display = df_display[['nom_region', 'total_boites', 'total_remb_float']]
+    df_display.columns = ['Région', 'Total Boîtes', 'Montant Remboursé']
+    
+    st.dataframe(df_display, use_container_width=True, hide_index=True)
 
 else:
     st.error("Impossible de charger les données")
