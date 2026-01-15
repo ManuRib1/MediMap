@@ -6,7 +6,7 @@ import requests
 import streamlit as st
 
 # URL de base de l'API
-API_BASE_URL = "http://127.0.0.1:8000"
+API_BASE_URL = "https://medimap-api.onrender.com"
 
 @st.cache_data(ttl=300)  # Cache pendant 5 minutes
 def get_overview(annee=2023):
