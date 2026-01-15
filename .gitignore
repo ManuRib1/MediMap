@@ -1,25 +1,25 @@
+# Environnement Python
+venv/
+env/
+__pycache__/
+*.pyc
+.env
+
 # Données
 data/raw/*
 data/processed/*
 *.csv
 *.xlsx
 
-# Environnement et Secrets
-.env
-.venv/
-venv/
-env/
-__pycache__/
-*.pyc
-
 # IDE
 .vscode/
 .idea/
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Logs et Notebooks
-*.log
+# Jupyter
 .ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# Logs
+*.log
