@@ -19,7 +19,7 @@ def get_overview(annee=2023):
         st.error(f"Erreur API: {e}")
         return None
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)
 def get_all_regions():
     """Récupère toutes les régions"""
     try:
