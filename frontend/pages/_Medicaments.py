@@ -1,7 +1,3 @@
-"""
-Page Médicaments
-"""
-
 import streamlit as st
 import pandas as pd
 from utils.api_client import search_medicaments, get_medicaments
@@ -19,17 +15,15 @@ query = st.text_input(
 )
 
 if query and len(query) >= 3:
-    # Recherche
-    results = search_medicaments(query)
+    # Recherche avec spinner
+    with st.spinner("⏳ Recherche en cours..."):
+        results = search_medicaments(query)
     
     if results:
         st.success(f"✅ {len(results)} résultat(s) trouvé(s)")
-        
-        # Afficher les résultats
         df = pd.DataFrame(results)
         df = df[['code_cip', 'nom_medicament']]
         df.columns = ['Code CIP', 'Nom du médicament']
-        
         st.dataframe(df, use_container_width=True, hide_index=True)
     else:
         st.warning("Aucun résultat trouvé")
@@ -41,13 +35,13 @@ else:
     # Afficher quelques médicaments par défaut
     st.markdown("### 📋 Liste des médicaments (100 premiers)")
     
-    medicaments = get_medicaments(skip=0, limit=100)
+    # AVEC SPINNER - BIEN INDENTÉ
+    with st.spinner("⏳ Chargement des médicaments (l'API peut prendre 30s à se réveiller)..."):
+        medicaments = get_medicaments(skip=0, limit=100)
     
     if medicaments:
         df = pd.DataFrame(medicaments)
         df = df[['code_cip', 'nom_medicament']]
         df.columns = ['Code CIP', 'Nom du médicament']
-        
         st.dataframe(df, use_container_width=True, hide_index=True)
-        
         st.info(f"💡 {len(medicaments)} médicaments affichés. Utilisez la recherche ci-dessus pour trouver un médicament spécifique.")
