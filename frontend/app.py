@@ -23,7 +23,9 @@ st.markdown("---")
 
 # Vérifier la connexion API
 try:
-    overview = get_overview(2023)
+    # Charger les données avec spinner
+    with st.spinner("⏳ Chargement des données (l'API peut prendre 30s à se réveiller)..."):
+        overview = get_overview(2023)
     
     if overview:
         # KPIs en haut
@@ -58,7 +60,10 @@ try:
         # Graphique Top Régions
         st.subheader("🏆 Top Régions par Montant Remboursé (2023)")
         
-        regions_stats = get_regions_stats(2023)
+        # Charger stats régions avec spinner
+        with st.spinner("⏳ Chargement des statistiques régionales..."):
+            regions_stats = get_regions_stats(2023)
+        
         if regions_stats:
             df = pd.DataFrame(regions_stats)
             
@@ -85,13 +90,16 @@ try:
             df_display.columns = ['Code', 'Région', 'Total Boîtes', 'Montant Remboursé']
             
             st.dataframe(df_display, use_container_width=True, hide_index=True)
+        else:
+            st.warning("⚠️ Impossible de charger les statistiques régionales")
     
     else:
         st.error("❌ Impossible de récupérer les données de l'API")
+        st.info("💡 L'API se réveille, veuillez rafraîchir la page dans quelques secondes...")
         
 except Exception as e:
     st.error(f"❌ Erreur de connexion à l'API: {e}")
-    st.info("💡 Assurez-vous que l'API FastAPI est bien lancée sur http://127.0.0.1:8000")
+    st.info("💡 Assurez-vous que l'API FastAPI est bien accessible")
 
 # Sidebar
 with st.sidebar:
